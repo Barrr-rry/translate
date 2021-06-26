@@ -138,7 +138,7 @@ def CRUDTable(method, sql):
     except (pymysql.Error, pymysql.Warning) as e:
         return e
     res = lambda method: cur.fetchall() if method == 'read' else True
-    db.commit() if method is not 'read' else None
+    db.commit() if method != 'read' else None
     db.close()
     return res(method)
 
