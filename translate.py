@@ -126,9 +126,9 @@ class Translate(object):
 
 
 def lineNotifyMessage(msg):
-
+    token = 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe'
     headers = {
-        "Authorization": "Bearer " + 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe',
+        "Authorization": "Bearer " + token,
         "Content-Type": "application/x-www-form-urlencoded"
     }
 
