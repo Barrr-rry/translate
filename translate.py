@@ -158,19 +158,18 @@ def translate_table(table):
     sql = f'select * from {table} where Translate_Eng IS NULL AND id%2=0'
     target = CRUDTable('read', sql)
     n = 0
+    ordinal = lambda n: f'{n}{"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]}'
     for col in target:
         n += 1
         start_time = time.time()
-        en_to_cn = Translate()
-        cn_to_en = Translate('en', 'zh-TW')
-        chinese = en_to_cn.translate(col[4])
-        translate_eng = cn_to_en.translate(chinese).replace('\"', '\'')
+        chinese = Translate().translate(col[4])
+        translate_eng = Translate('en', 'zh-TW').translate(chinese).replace('\"', '\'')
         sm = similarity(chinese, translate_eng)
         sql = f'UPDATE {table} SET chinese = \"{chinese}\", Translate_Eng = \"{translate_eng}\", Similarity={sm} WHERE id={col[0]};'
         res = CRUDTable('update', sql)
         end_time = time.time()
         if res:
-            print(f'INFO : The {n}th data translation was successful.  Process time : {end_time-start_time} s.')
+            print(f'INFO : The {ordinal(n)} data translation was successful.  Process time : {end_time-start_time} sec.')
             lineNotifyMessage(f'INFO:本次翻譯已完成{n}筆資料。') if n % 100 == 0 else None
         else:
             logging.error(res)
