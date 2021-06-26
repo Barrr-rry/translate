@@ -104,24 +104,16 @@ class Translate(object):
         return baseUrl
 
     def translate(self, text):
-
         tk = self.js.get_tk(text)
-
         if len(text) > 4891:
             raise Exception("超過翻譯長度限制")
         url = self.build_url(text, tk)
-        _result = self.open_url(url)
-        data = _result.content.decode('utf-8')
-
+        data = self.open_url(url).content.decode('utf-8')
         tmp = json.loads(data)
         json_array = tmp[0]
         result = None
         for json_item in json_array:
-            if json_item[0]:
-                if result:
-                    result = result + " " + json_item[0]
-                else:
-                    result = json_item[0]
+            result = (result + " " + json_item[0] if result else json_item[0]) if json_item[0] else result
         return result
 
 
