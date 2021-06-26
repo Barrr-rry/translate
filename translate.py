@@ -66,13 +66,12 @@ class Translate(object):
 
     def open_url(self, url):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
-        token = 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe'
         # req = requests.get(url=url, headers=headers, timeout=8)
         try:
             req = requests.get(url=url, headers=headers)
         except Exception as e:
             logging.error(e)
-            lineNotifyMessage(token, e)
+            lineNotifyMessage(e)
         return req
 
     def build_url(self, text, tk):
@@ -126,10 +125,10 @@ class Translate(object):
         return result
 
 
-def lineNotifyMessage(token, msg):
+def lineNotifyMessage(msg):
 
     headers = {
-        "Authorization": "Bearer " + token,
+        "Authorization": "Bearer " + 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe',
         "Content-Type": "application/x-www-form-urlencoded"
     }
 
@@ -138,17 +137,28 @@ def lineNotifyMessage(token, msg):
     return r.status_code
 
 
-def ts_Data(table):
+def CRUDTable(method, sql):
     db = pymysql.connect(host='163.18.10.123', port=3306,
                          user='EPuser', passwd='e507@mis', db='entries', charset='utf8mb4')
-    cursor = db.cursor()
+    cur = db.cursor()
+    try:
+        cur.execute(sql)
+    except (pymysql.Error, pymysql.Warning) as e:
+        return e
+    res = True
+    if method == 'read':
+        res = cur.fetchall()
+    else:
+        db.commit()
+    db.close()
+    return res
+
+
+def translate_table(table):
     sql = f'select * from {table} where Translate_Eng IS NULL AND id%2=0'
-    cursor.execute(sql)
-    result = cursor.fetchall()
-    data = []
+    target = CRUDTable('read', sql)
     n = 0
-    token = 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe'
-    for col in result:
+    for col in target:
         n += 1
         start_time = time.time()
         en_to_cn = Translate()
@@ -156,25 +166,18 @@ def ts_Data(table):
         chinese = en_to_cn.translate(col[4])
         translate_eng = cn_to_en.translate(chinese).replace('\"', '\'')
         sm = similarity(chinese, translate_eng)
-        cur = db.cursor()
-        update_sql = f'UPDATE {table} SET chinese = \"{chinese}\", Translate_Eng = \"{translate_eng}\", Similarity={sm} WHERE id={col[0]};'
-        msg = f'INFO : The {n}th data translation was successful.'
-        try:
-            cur.execute(update_sql)
-            end_time = time.time()
-            print(f'{msg}  Process time : {end_time-start_time} s.')
-            if n % 100 == 0:
-                lineNotifyMessage(token, f'INFO:本次翻譯已完成{n}筆資料。')
-        except (pymysql.Error, pymysql.Warning) as e:
-            msg = f'The {n}th data translation failed, {e}'
-            logging.error(msg)
-            lineNotifyMessage(token, msg)
+        sql = f'UPDATE {table} SET chinese = \"{chinese}\", Translate_Eng = \"{translate_eng}\", Similarity={sm} WHERE id={col[0]};'
+        res = CRUDTable('update', sql)
+        end_time = time.time()
+        if res:
+            print(f'INFO : The {n}th data translation was successful.  Process time : {end_time-start_time} s.')
+            lineNotifyMessage(f'INFO:本次翻譯已完成{n}筆資料。') if n % 100 == 0 else None
+        else:
+            logging.error(res)
+            lineNotifyMessage(res)
             continue
-        db.commit()
-    db.close()
-    lineNotifyMessage(token, f'INFO:本次翻譯已完成，共翻譯了{n}筆資料。')
+    lineNotifyMessage(f'INFO:本次翻譯已完成，共翻譯了{n}筆資料。')
 
 
 if __name__ == '__main__':
-    t = """According to Musk, you can’t learn what you can’t connect. After all, many memory experts note that the best way to remember something is to associate it with something you already know. If there are no mental "hooks" for new knowledge to catch on, it tends to go in one ear and out the other."""
-    ts_Data('sentwikipedia')
+    translate_table('sentwikipedia')
