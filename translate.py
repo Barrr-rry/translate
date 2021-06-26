@@ -145,13 +145,10 @@ def CRUDTable(method, sql):
         cur.execute(sql)
     except (pymysql.Error, pymysql.Warning) as e:
         return e
-    res = True
-    if method == 'read':
-        res = cur.fetchall()
-    else:
-        db.commit()
+    res = lambda method: cur.fetchall() if method == 'read' else True
+    db.commit() if method is not 'read' else None
     db.close()
-    return res
+    return res(method)
 
 
 def translate_table(table):
