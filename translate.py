@@ -144,8 +144,13 @@ def CRUDTable(method, sql):
     return res(method)
 
 
-def translate_table(table):
-    sql = f'select * from {table} where Translate_Eng IS NULL AND id%2=0 AND id%3!=0'
+def translate_table(table, token):
+    filter_dct = {
+        'Btu6BYZCU4bWRw45LS6f3W1nrNm0FRYVk3BkMqsxcnq': 'AND id%2=1 AND id%3!=0',
+        'xTix6RnFDWBtOfDATgURmnrvyxIFPmRcGSIleRsGkym': 'AND id%2=1 AND id%3!=0',
+        'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe': 'AND id%3=0',
+    }
+    sql = f'select * from {table} where Translate_Eng IS NULL {filter_dct.get(token)}'
     target = CRUDTable('read', sql)
     n = 0
     ordinal = lambda n: f'{n}{"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]}'
@@ -170,4 +175,4 @@ def translate_table(table):
 
 
 if __name__ == '__main__':
-    translate_table('sent')
+    translate_table('sent', 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe')
