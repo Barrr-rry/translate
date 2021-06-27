@@ -60,12 +60,11 @@ class Py4Js:
 
 
 class Translate(object):
-    def __init__(self, to_language='zh-TW', this_language='en', read=False, token='Btu6BYZCU4bWRw45LS6f3W1nrNm0FRYVk3BkMqsxcnq'):
+    def __init__(self, to_language='zh-TW', this_language='en', read=False):
         self.this_language = this_language
         self.to_language = to_language
         self.read = read
         self.js = Py4Js()
-        self.token = token
 
     def open_url(self, url):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
@@ -74,7 +73,7 @@ class Translate(object):
             req = requests.get(url=url, headers=headers)
         except Exception as e:
             logging.error(e)
-            lineNotifyMessage(e, self.token)
+            lineNotifyMessage(e)
         return req
 
     def build_url(self, text, tk):
@@ -120,7 +119,8 @@ class Translate(object):
         return result
 
 
-def lineNotifyMessage(msg, token):
+def lineNotifyMessage(msg):
+    token = '5pPi2Ej3dT8nH6XrdWuYSlm2fQJNsFg9T9xxQcVLAGz'
     headers = {
         "Authorization": "Bearer " + token,
         "Content-Type": "application/x-www-form-urlencoded"
@@ -154,17 +154,16 @@ def crudTable(method, sql):
 
 def translate_table(table):
     filter_dct = {
-                    '1': ['Btu6BYZCU4bWRw45LS6f3W1nrNm0FRYVk3BkMqsxcnq', 'AND id%2=1 AND id%3!=0 AND id%4!=0 AND id%5!=0 AND id%6!=0'],
-                    '2': ['xTix6RnFDWBtOfDATgURmnrvyxIFPmRcGSIleRsGkym', 'AND id%2=0 AND id%3!=0 AND id%4!=0 AND id%5!=0 AND id%6!=0'],
-                    '3': ['Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe', 'AND id%3=0 AND id%4!=0 AND id%5!=0 AND id%6!=0'],
-                    '4': ['YbpLcVThmlMg597qSF94nUTdaJuXeEuz6V7mO0EzjIE', 'AND id%4=0 AND id%5!=0 AND id%6!=0'],
-                    '5': ['jOOhY3s6KF5rLVI65flZ7msOxMdNVvwfPmvWXWym75C', 'AND id%5=0 AND id%6!=0'],
-                    '6': ['a5sFhBIqbZOYSspwtVTp4fAwFg2lQODXKC9ZWSRDtN1', 'AND id%6=0'],
-    }
-    print('請輸入批次：')
+                    '1': 'AND id%2=1 AND id%3!=0 AND id%4!=0 AND id%5!=0 AND id%6!=0',
+                    '2': 'AND id%2=0 AND id%3!=0 AND id%4!=0 AND id%5!=0 AND id%6!=0',
+                    '3': 'AND id%3=0 AND id%4!=0 AND id%5!=0 AND id%6!=0',
+                    '4': 'AND id%4=0 AND id%5!=0 AND id%6!=0',
+                    '5': 'AND id%5=0 AND id%6!=0',
+                    '6': 'AND id%6=0',
+                    }
+    print('請輸入執行梯次：')
     num = input()
-    token = filter_dct.get(num)[0]
-    sql = f'select * from {table} where Translate_Eng IS NULL {filter_dct.get(num)[1]}'
+    sql = f'select * from {table} where Translate_Eng IS NULL {filter_dct.get(num)}'
     target = crudTable('read', sql)
     n = 0
     ordinal = lambda n: f'{n}{"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]}'
@@ -172,8 +171,8 @@ def translate_table(table):
         n += 1
         start_time = time.time()
         eng = col[4]
-        chinese = Translate(token=token).translate(eng)
-        translate_eng = Translate('en', 'zh-TW', token=token).translate(chinese).replace('\"', '\'')
+        chinese = Translate().translate(eng)
+        translate_eng = Translate('en', 'zh-TW').translate(chinese).replace('\"', '\'')
         sm = similarity(eng, translate_eng)
         update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         sql = f'UPDATE {table} SET chinese = \"{chinese}\", Translate_Eng = \"{translate_eng}\", Similarity={sm}, update_time=\"{update_time}\" WHERE id={col[0]};'
@@ -181,12 +180,12 @@ def translate_table(table):
         end_time = time.time()
         if res:
             print(f'INFO : The {ordinal(n)} data translation was successful.  Process time : {end_time-start_time} sec.')
-            lineNotifyMessage(f'INFO:已完成{n}筆資料。', token) if n % 500 == 0 else None
+            lineNotifyMessage(f'INFO：第{ordinal(int(num))}梯次已執行{n}筆資料。') if n % 2 == 0 else None
         else:
             logging.error(res)
-            lineNotifyMessage(res, token)
+            lineNotifyMessage(res)
             continue
-    lineNotifyMessage(f'INFO:本次翻譯已完成，共翻譯了{n}筆資料。', token)
+    lineNotifyMessage(f'INFO：{ordinal(int(num))}梯次翻譯已執行完畢，共翻譯{n}筆資料。')
 
 
 def re_similarity(table):
@@ -211,7 +210,10 @@ def rm_sameData(table):
                 delete_sql = f'delete from {table} WHERE id={tmp[0]};'
                 res = res = crudTable('delete', delete_sql)
                 print(f'success, target_id = {target[0]}, content = {target[1]}') if res else print(res)
-                targets.remove((tmp[0], target[1]))
+                try:
+                    targets.remove((tmp[0], target[1]))
+                except Exception:
+                    continue
 
 
 if __name__ == '__main__':
