@@ -60,11 +60,12 @@ class Py4Js:
 
 
 class Translate(object):
-    def __init__(self, to_language='zh-TW', this_language='en', read=False):
+    def __init__(self, to_language='zh-TW', this_language='en', read=False, token='Btu6BYZCU4bWRw45LS6f3W1nrNm0FRYVk3BkMqsxcnq'):
         self.this_language = this_language
         self.to_language = to_language
         self.read = read
         self.js = Py4Js()
+        self.token = token
 
     def open_url(self, url):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:23.0) Gecko/20100101 Firefox/23.0'}
@@ -73,7 +74,7 @@ class Translate(object):
             req = requests.get(url=url, headers=headers)
         except Exception as e:
             logging.error(e)
-            lineNotifyMessage(e)
+            lineNotifyMessage(e, self.token)
         return req
 
     def build_url(self, text, tk):
@@ -119,8 +120,7 @@ class Translate(object):
         return result
 
 
-def lineNotifyMessage(msg):
-    token = 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe'
+def lineNotifyMessage(msg, token):
     headers = {
         "Authorization": "Bearer " + token,
         "Content-Type": "application/x-www-form-urlencoded"
@@ -158,8 +158,8 @@ def translate_table(table, token):
     for col in target:
         n += 1
         start_time = time.time()
-        chinese = Translate().translate(col[4])
-        translate_eng = Translate('en', 'zh-TW').translate(chinese).replace('\"', '\'')
+        chinese = Translate(token=token).translate(col[4])
+        translate_eng = Translate('en', 'zh-TW', token=token).translate(chinese).replace('\"', '\'')
         sm = similarity(chinese, translate_eng)
         update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         sql = f'UPDATE {table} SET chinese = \"{chinese}\", Translate_Eng = \"{translate_eng}\", Similarity={sm}, update_time=\"{update_time}\" WHERE id={col[0]};'
@@ -167,12 +167,12 @@ def translate_table(table, token):
         end_time = time.time()
         if res:
             print(f'INFO : The {ordinal(n)} data translation was successful.  Process time : {end_time-start_time} sec.')
-            lineNotifyMessage(f'INFO:已完成{n}筆資料。') if n % 500 == 0 else None
+            lineNotifyMessage(f'INFO:已完成{n}筆資料。', token) if n % 500 == 0 else None
         else:
             logging.error(res)
-            lineNotifyMessage(res)
+            lineNotifyMessage(res, token)
             continue
-    lineNotifyMessage(f'INFO:本次翻譯已完成，共翻譯了{n}筆資料。')
+    lineNotifyMessage(f'INFO:本次翻譯已完成，共翻譯了{n}筆資料。', token)
 
 
 def reSimilarity(table):
@@ -187,6 +187,7 @@ def reSimilarity(table):
 
 
 if __name__ == '__main__':
-    table = 'sentwikipedia'
-    # translate_table(table, 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe')
-    reSimilarity(table)
+    table = 'sent'
+    token = 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe'
+    translate_table(table, token)
+    # reSimilarity(table)
