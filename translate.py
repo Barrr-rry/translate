@@ -7,6 +7,7 @@ import logging
 import time
 from urllib import parse
 from Similarity import similarity
+from datetime import datetime
 
 
 class Py4Js:
@@ -154,7 +155,8 @@ def translate_table(table):
         chinese = Translate().translate(col[4])
         translate_eng = Translate('en', 'zh-TW').translate(chinese).replace('\"', '\'')
         sm = similarity(chinese, translate_eng)
-        sql = f'UPDATE {table} SET chinese = \"{chinese}\", Translate_Eng = \"{translate_eng}\", Similarity={sm} WHERE id={col[0]};'
+        update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        sql = f'UPDATE {table} SET chinese = \"{chinese}\", Translate_Eng = \"{translate_eng}\", Similarity={sm}, update_time=\"{update_time}\" WHERE id={col[0]};'
         res = CRUDTable('update', sql)
         end_time = time.time()
         if res:
@@ -168,4 +170,4 @@ def translate_table(table):
 
 
 if __name__ == '__main__':
-    translate_table('sentwikipedia')
+    translate_table('sent')
