@@ -147,7 +147,7 @@ def CRUDTable(method, sql):
 def translate_table(table, token):
     filter_dct = {
         'Btu6BYZCU4bWRw45LS6f3W1nrNm0FRYVk3BkMqsxcnq': 'AND id%2=1 AND id%3!=0',
-        'xTix6RnFDWBtOfDATgURmnrvyxIFPmRcGSIleRsGkym': 'AND id%2=1 AND id%3!=0',
+        'xTix6RnFDWBtOfDATgURmnrvyxIFPmRcGSIleRsGkym': 'AND id%2=0 AND id%3!=0',
         'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe': 'AND id%3=0',
     }
     sql = f'select * from {table} where Translate_Eng IS NULL {filter_dct.get(token)}'
