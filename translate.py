@@ -144,7 +144,7 @@ def CRUDTable(method, sql):
 
 
 def translate_table(table):
-    sql = f'select * from {table} where Translate_Eng IS NULL AND id%2=0'
+    sql = f'select * from {table} where Translate_Eng IS NULL AND id%2=0 AND id%3!=0'
     target = CRUDTable('read', sql)
     n = 0
     ordinal = lambda n: f'{n}{"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]}'
@@ -159,7 +159,7 @@ def translate_table(table):
         end_time = time.time()
         if res:
             print(f'INFO : The {ordinal(n)} data translation was successful.  Process time : {end_time-start_time} sec.')
-            lineNotifyMessage(f'INFO:本次翻譯已完成{n}筆資料。') if n % 100 == 0 else None
+            lineNotifyMessage(f'INFO:已完成{n}筆資料。') if n % 500 == 0 else None
         else:
             logging.error(res)
             lineNotifyMessage(res)
