@@ -131,28 +131,41 @@ def lineNotifyMessage(msg, token):
     return r.status_code
 
 
-def CRUDTable(method, sql):
+def connDB():
     db = pymysql.connect(host='163.18.10.123', port=3306,
                          user='EPuser', passwd='e507@mis', db='entries', charset='utf8mb4')
     cur = db.cursor()
+    return db, cur
+
+
+def closeDB():
+    db.close()
+
+
+def crudTable(method, sql):
     try:
         cur.execute(sql)
     except (pymysql.Error, pymysql.Warning) as e:
         return e
     res = lambda method: cur.fetchall() if method == 'read' else True
     db.commit() if method != 'read' else None
-    db.close()
     return res(method)
 
 
-def translate_table(table, token):
+def translate_table(table):
     filter_dct = {
-        'Btu6BYZCU4bWRw45LS6f3W1nrNm0FRYVk3BkMqsxcnq': 'AND id%2=1 AND id%3!=0',
-        'xTix6RnFDWBtOfDATgURmnrvyxIFPmRcGSIleRsGkym': 'AND id%2=0 AND id%3!=0',
-        'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe': 'AND id%3=0',
+                    '1': ['Btu6BYZCU4bWRw45LS6f3W1nrNm0FRYVk3BkMqsxcnq', 'AND id%2=1 AND id%3!=0 AND id%4!=0 AND id%5!=0 AND id%6!=0'],
+                    '2': ['xTix6RnFDWBtOfDATgURmnrvyxIFPmRcGSIleRsGkym', 'AND id%2=0 AND id%3!=0 AND id%4!=0 AND id%5!=0 AND id%6!=0'],
+                    '3': ['Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe', 'AND id%3=0 AND id%4!=0 AND id%5!=0 AND id%6!=0'],
+                    '4': ['YbpLcVThmlMg597qSF94nUTdaJuXeEuz6V7mO0EzjIE', 'AND id%4=0 AND id%5!=0 AND id%6!=0'],
+                    '5': ['jOOhY3s6KF5rLVI65flZ7msOxMdNVvwfPmvWXWym75C', 'AND id%5=0 AND id%6!=0'],
+                    '6': ['a5sFhBIqbZOYSspwtVTp4fAwFg2lQODXKC9ZWSRDtN1', 'AND id%6=0'],
     }
-    sql = f'select * from {table} where Translate_Eng IS NULL {filter_dct.get(token)}'
-    target = CRUDTable('read', sql)
+    print('請輸入批次：')
+    num = input()
+    token = filter_dct.get(num)[0]
+    sql = f'select * from {table} where Translate_Eng IS NULL {filter_dct.get(num)[1]}'
+    target = crudTable('read', sql)
     n = 0
     ordinal = lambda n: f'{n}{"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]}'
     for col in target:
@@ -164,7 +177,7 @@ def translate_table(table, token):
         sm = similarity(eng, translate_eng)
         update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         sql = f'UPDATE {table} SET chinese = \"{chinese}\", Translate_Eng = \"{translate_eng}\", Similarity={sm}, update_time=\"{update_time}\" WHERE id={col[0]};'
-        res = CRUDTable('update', sql)
+        res = crudTable('update', sql)
         end_time = time.time()
         if res:
             print(f'INFO : The {ordinal(n)} data translation was successful.  Process time : {end_time-start_time} sec.')
@@ -176,19 +189,37 @@ def translate_table(table, token):
     lineNotifyMessage(f'INFO:本次翻譯已完成，共翻譯了{n}筆資料。', token)
 
 
-def reSimilarity(table):
-    target_sql = f'select id, Content, Translate_Eng from {table}'
-    targets = CRUDTable('read', target_sql)
+def re_similarity(table):
+    target_sql = f'select id, Content, Translate_Eng from {table} where Similarity < 0.5'
+    targets = crudTable('read', target_sql)
     for target in tqdm(targets):
+        sm = similarity(target[1], target[2])
         update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        update_sql = f'UPDATE {table} SET Similarity={similarity(target[1], target[2])}, update_time=\"{update_time}\" WHERE id={target[0]};'
-        res = CRUDTable('update', update_sql)
-        print(res) if not res else None
-    CRUDTable(sql)
+        update_sql = f'UPDATE {table} SET Similarity={sm}, update_time=\"{update_time}\" WHERE id={target[0]};'
+        res = crudTable('update', update_sql)
+        # print(f'success, Similarity = {sm}') if res else print(res)
+
+
+def rm_sameData(table):
+    target_sql = f'select id, Content from {table}'
+    targets = list(crudTable('read', target_sql))
+    for target in tqdm(targets):
+        sql = f'select id from {table} where id != {target[0]} and Content = \"{target[1]}\"'
+        tmps = crudTable('read', sql)
+        if tmps:
+            for tmp in tmps:
+                delete_sql = f'delete from {table} WHERE id={tmp[0]};'
+                res = res = crudTable('delete', delete_sql)
+                print(f'success, target_id = {target[0]}, content = {target[1]}') if res else print(res)
+                targets.remove((tmp[0], target[1]))
 
 
 if __name__ == '__main__':
-    table = 'sentwikipedia'
-    token = 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe'
-    # translate_table(table, token)
-    reSimilarity(table)
+    db, cur = connDB()
+    table = 'sent'
+    n = 0
+    translate_table(table)
+    # re_similarity(table)
+    # rm_sameData(table)
+    closeDB()
+
