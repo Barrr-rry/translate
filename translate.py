@@ -177,10 +177,10 @@ def translate_table(table, token):
 
 
 def reSimilarity(table):
-    update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    target_sql = f'select id, Content, Translate_Eng from {table} where update_time is null'
+    target_sql = f'select id, Content, Translate_Eng from {table}'
     targets = CRUDTable('read', target_sql)
     for target in tqdm(targets):
+        update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         update_sql = f'UPDATE {table} SET Similarity={similarity(target[1], target[2])}, update_time=\"{update_time}\" WHERE id={target[0]};'
         res = CRUDTable('update', update_sql)
         print(res) if not res else None
