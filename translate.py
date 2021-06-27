@@ -158,9 +158,10 @@ def translate_table(table, token):
     for col in target:
         n += 1
         start_time = time.time()
-        chinese = Translate(token=token).translate(col[4])
+        eng = col[4]
+        chinese = Translate(token=token).translate(eng)
         translate_eng = Translate('en', 'zh-TW', token=token).translate(chinese).replace('\"', '\'')
-        sm = similarity(chinese, translate_eng)
+        sm = similarity(eng, translate_eng)
         update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         sql = f'UPDATE {table} SET chinese = \"{chinese}\", Translate_Eng = \"{translate_eng}\", Similarity={sm}, update_time=\"{update_time}\" WHERE id={col[0]};'
         res = CRUDTable('update', sql)
@@ -177,7 +178,7 @@ def translate_table(table, token):
 
 def reSimilarity(table):
     update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    target_sql = f'select id, Chinese, Translate_Eng from {table} where update_time is null'
+    target_sql = f'select id, Content, Translate_Eng from {table} where update_time is null'
     targets = CRUDTable('read', target_sql)
     for target in tqdm(targets):
         update_sql = f'UPDATE {table} SET Similarity={similarity(target[1], target[2])}, update_time=\"{update_time}\" WHERE id={target[0]};'
@@ -187,7 +188,7 @@ def reSimilarity(table):
 
 
 if __name__ == '__main__':
-    table = 'sent'
+    table = 'sentwikipedia'
     token = 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe'
-    translate_table(table, token)
-    # reSimilarity(table)
+    # translate_table(table, token)
+    reSimilarity(table)
