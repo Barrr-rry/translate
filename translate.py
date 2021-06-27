@@ -153,17 +153,13 @@ def crudTable(method, sql):
 
 
 def translate_table(table):
-    filter_dct = {
-                    '1': 'AND id%2=1 AND id%3!=0 AND id%4!=0 AND id%5!=0 AND id%6!=0',
-                    '2': 'AND id%2=0 AND id%3!=0 AND id%4!=0 AND id%5!=0 AND id%6!=0',
-                    '3': 'AND id%3=0 AND id%4!=0 AND id%5!=0 AND id%6!=0',
-                    '4': 'AND id%4=0 AND id%5!=0 AND id%6!=0',
-                    '5': 'AND id%5=0 AND id%6!=0',
-                    '6': 'AND id%6=0',
-                    }
     print('請輸入執行梯次：')
-    num = input()
-    sql = f'select * from {table} where Translate_Eng IS NULL {filter_dct.get(num)}'
+    num = int(input())
+    filter_str = f'AND id%3!=0 AND id%4!=0 AND id%5!=0 AND id%6!=0 AND id%7!=0 AND id%8!=0 AND id%9!=0 AND id%10!=0 AND id%11!=0 AND id%12!=0 AND id%13!=0 AND id%14!=0 AND id%15!=0 AND id%16!=0 AND id%17!=0 AND id%18!=0 AND id%19!=0 AND id%20!=0'
+    filter_str += f' AND id%2=1' if num == 1 else f' AND id%{num}=0'
+    for i in range(num, 2, -1):
+        filter_str = filter_str.replace(f'AND id%{i}!=0 ', '', 1)
+    sql = f'select * from {table} where Translate_Eng IS NULL {filter_str}'
     target = crudTable('read', sql)
     n = 0
     ordinal = lambda n: f'{n}{"tsnrhtdd"[(n//10%10!=1)*(n%10<4)*n%10::4]}'
@@ -180,12 +176,12 @@ def translate_table(table):
         end_time = time.time()
         if res:
             print(f'INFO : The {ordinal(n)} data translation was successful.  Process time : {end_time-start_time} sec.')
-            lineNotifyMessage(f'INFO：第{ordinal(int(num))}梯次已執行{n}筆資料。') if n % 2 == 0 else None
+            lineNotifyMessage(f'INFO：第{ordinal(num)}梯次已執行{n}筆資料。') if n % 500 == 0 else None
         else:
             logging.error(res)
             lineNotifyMessage(res)
             continue
-    lineNotifyMessage(f'INFO：{ordinal(int(num))}梯次翻譯已執行完畢，共翻譯{n}筆資料。')
+    lineNotifyMessage(f'INFO：{ordinal(num)}梯次翻譯已執行完畢，共翻譯{n}筆資料。')
 
 
 def re_similarity(table):
