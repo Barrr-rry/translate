@@ -8,6 +8,7 @@ import time
 from urllib import parse
 from Similarity import similarity
 from datetime import datetime
+from tqdm import tqdm, trange
 
 
 class Py4Js:
@@ -174,5 +175,18 @@ def translate_table(table, token):
     lineNotifyMessage(f'INFO:本次翻譯已完成，共翻譯了{n}筆資料。')
 
 
+def reSimilarity(table):
+    update_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    target_sql = f'select id, Chinese, Translate_Eng from {table} where update_time is null'
+    targets = CRUDTable('read', target_sql)
+    for target in tqdm(targets):
+        update_sql = f'UPDATE {table} SET Similarity={similarity(target[1], target[2])}, update_time=\"{update_time}\" WHERE id={target[0]};'
+        res = CRUDTable('update', update_sql)
+        print(res) if not res else None
+    CRUDTable(sql)
+
+
 if __name__ == '__main__':
-    translate_table('sent', 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe')
+    table = 'sentwikipedia'
+    # translate_table(table, 'Nu411JDgWGBfyElBJRboSPBuKnMnae7cp24OKTLhFJe')
+    reSimilarity(table)
